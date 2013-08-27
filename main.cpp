@@ -35,6 +35,7 @@ using namespace std;
 boost::chrono::steady_clock::time_point timer;
 
 void update();
+void tick();
 void render();
 void prepareProgram();
 void prepareShaders();
@@ -55,6 +56,7 @@ GLuint fragment;
 GLuint vertex;
 GLuint texture_A; // contains the initial data
 GLuint texture_B;
+GLuint to_render;
 GLuint fb_A;      // first framebuffer
 GLuint fb_B;      // second framebuffer
 GLuint tex_uniform;
@@ -70,7 +72,7 @@ int main(int argc, char *argv[])
     height = 400;
 
     t = 0;
-    dt = 0.01666666667;
+    dt = 1.0f/60.0f;
     
     glutInit(&argc, argv);
     glutInitWindowPosition(200,200);
@@ -108,6 +110,7 @@ int main(int argc, char *argv[])
     glLinkProgram(program);
     glUseProgram(program);
 
+    to_render = texture_A;
     tex_uniform = glGetUniformLocation(program, "tex");
     pixel_uniform = glGetUniformLocation(program, "pixel");
 
@@ -116,6 +119,50 @@ int main(int argc, char *argv[])
     glutMainLoop();
 
     return 0;
+}
+
+void tick()
+{
+     glUseProgram(program); 
+     glActiveTexture(GL_TEXTURE0);
+                                                         
+     glViewport(0,0,width,height);
+     
+     if(counter % 2 == 0)
+     {
+       glBindFramebuffer(GL_FRAMEBUFFER, fb_A);
+       glBindTexture(GL_TEXTURE_2D, texture_B);
+       to_render = texture_A;
+     } 
+     else
+     {
+       glBindFramebuffer(GL_FRAMEBUFFER, fb_B);
+       glBindTexture(GL_TEXTURE_2D, texture_A);    
+       to_render = texture_B;
+     }
+                                                         
+     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                                                         
+     glViewport(0,0,width,height);
+     glBegin(GL_QUADS);
+         glTexCoord2f(0.0f,0.0f);
+         glVertex2f(-1.0f,-1.0f);
+                               
+         glTexCoord2f(1.0f,0.0f);
+         glVertex2f( 1.0f,-1.0f);
+                               
+         glTexCoord2f(1.0f ,1.0f);
+         glVertex2f( 1.0f, 1.0f);
+                               
+         glTexCoord2f( 0.0f,1.0f);
+         glVertex2f( -1.0f, 1.0f);
+     glEnd();
+                                                         
+     glUseProgram(0); 
+                                                         
+     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    counter ++;
 }
 
 void update()
@@ -135,52 +182,13 @@ void update()
     {
         accumulator -= dt;
         t += dt;
+        tick();
     }
     render();
 }
 
 void render()
 {
-    GLuint to_render;
-
-    glUseProgram(program); 
-    glActiveTexture(GL_TEXTURE0);
-
-    glViewport(0,0,width,height);
-    
-    if(counter % 2 == 0)
-    {
-      glBindFramebuffer(GL_FRAMEBUFFER, fb_A);
-      glBindTexture(GL_TEXTURE_2D, texture_B);
-      to_render = texture_A;
-    } 
-    else
-    {
-      glBindFramebuffer(GL_FRAMEBUFFER, fb_B);
-      glBindTexture(GL_TEXTURE_2D, texture_A);    
-      to_render = texture_B;
-    }
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glViewport(0,0,width,height);
-    glBegin(GL_QUADS);
-        glTexCoord2f(0.0f,0.0f);
-        glVertex2f(-1.0f,-1.0f);
-                              
-        glTexCoord2f(1.0f,0.0f);
-        glVertex2f( 1.0f,-1.0f);
-                              
-        glTexCoord2f(1.0f ,1.0f);
-        glVertex2f( 1.0f, 1.0f);
-                              
-        glTexCoord2f( 0.0f,1.0f);
-        glVertex2f( -1.0f, 1.0f);
-    glEnd();
-
-    glUseProgram(0); 
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, to_render);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -201,7 +209,6 @@ void render()
         glVertex3f( -1.0f, 1.0f,0.0f);
     glEnd();
 
-    counter ++;
     glutSwapBuffers();
     //boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
 }

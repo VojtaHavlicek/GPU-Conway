@@ -18,7 +18,7 @@ void main()
 
     vec3 live = vec3(greaterThan(pixel_rgb, vec3(0.0)));
     pixel_rgb += (1.0 - live) *vec3(equal(neighbours, ivec3(3)));
-    pixel_rgb *= vec3(equal(neighbours, ivec3(2))) + vec3(equal(neighbours,ivec3(3)));
+    pixel_rgb *= vec3(equal(neighbours, vec3(2.0))) + vec3(equal(neighbours,vec3(3.0)));
     pixel_rgb -= vec3(greaterThan(pixel_rgb, vec3(0.4)))*0.05;
 
     gl_FragColor = vec4(pixel_rgb, 1.0);
